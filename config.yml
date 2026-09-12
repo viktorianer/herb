@@ -180,6 +180,13 @@ errors:
 
       fields: []
 
+    - name: "ERBCaseInlinePatternMatchError"
+      message:
+        template: "A `case` statement and its first `in` pattern on the same line read as Ruby's one-line pattern match, not as a `case`/`in`. Put the `in` pattern on its own line, or in its own ERB tag (e.g., `<% case x %>` followed by `<% in y %>`)."
+        arguments: []
+
+      fields: []
+
     - name: "ConditionalElementMultipleTagsError"
       message:
         template: "Conditional element pattern detected at (%zu:%zu) but the conditional block contains multiple HTML tags. Each conditional element must wrap exactly one opening and one closing tag. Consider nesting the conditionals individually."
