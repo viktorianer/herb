@@ -236,13 +236,16 @@ module Herb
 
       def visit_erb_control_node(node, &)
         if node.content
-          if erb_escaped?(node.tag_opening.value)
+          if node.tag_opening && erb_escaped?(node.tag_opening.value)
             add_escaped_erb_tag(node)
           else
             code_index = @tokens.length
+            condition = continued_condition(node)
+            raw = node.content.value
+            raw += condition.content.value if condition
 
-            apply_trim(node, node.content.value.strip)
-            keep_line_count(node, at: code_index)
+            apply_trim(node, raw.strip)
+            keep_line_count(node, at: code_index, raw: raw)
           end
         end
 
@@ -276,6 +279,8 @@ module Herb
       end
 
       def visit_erb_when_node(node)
+        return visit_all(node.statements) if continued_from_opening_tag?(node)
+
         visit_erb_control_with_parts(node, :statements)
       end
 
@@ -312,6 +317,8 @@ module Herb
       end
 
       def visit_erb_in_node(node)
+        return visit_all(node.statements) if continued_from_opening_tag?(node)
+
         visit_erb_control_with_parts(node, :statements)
       end
 
@@ -508,8 +515,8 @@ module Herb
         @padding_before[@tokens.length] += lines
       end
 
-      def keep_line_count(node, extra: 0, at: nil, absorbed: 0)
-        raw = node.content.value
+      def keep_line_count(node, extra: 0, at: nil, absorbed: 0, raw: nil)
+        raw ||= node.content.value
 
         leading = raw[0, raw.length - raw.lstrip.length].to_s.count("\n")
         trailing = raw.count("\n") - raw.strip.count("\n") - leading + extra - absorbed
@@ -751,7 +758,7 @@ module Herb
       end
 
       def left_trim?(node)
-        node.tag_opening.value == "<%-"
+        node.tag_opening&.value == "<%-"
       end
 
       def right_trim?(node)
@@ -857,6 +864,21 @@ module Herb
         else
           @tokens << [:code, code, current_context]
         end
+      end
+
+      def continued_condition(node)
+        return nil unless node.tag_closing.nil?
+        return nil unless node.respond_to?(:conditions)
+
+        condition = node.conditions&.first
+
+        return nil unless condition && continued_from_opening_tag?(condition)
+
+        condition
+      end
+
+      def continued_from_opening_tag?(node)
+        node.tag_opening.nil? && !node.content.nil?
       end
 
       #: (untyped) -> bool
