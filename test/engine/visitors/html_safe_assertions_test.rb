@@ -87,7 +87,7 @@ module Engine
 
       engine = Herb::Engine.new(template, assertion_options)
 
-      refute_includes engine.src, "HTMLSafeAssertions"
+      assert_equal 0, engine.src.scan("HTMLSafeAssertions").length
     end
 
     test "every call is wrapped once when the visitor is passed twice" do
@@ -112,7 +112,7 @@ module Engine
         visitors: [Herb::Engine::HTMLSafeAssertionsVisitor.new]
       )
 
-      assert_includes engine.src, "HTMLSafeAssertions.check"
+      assert_equal 1, engine.src.scan("HTMLSafeAssertions.check").length
     end
 
     test "a document parsed without the prism_program option raises" do
@@ -122,7 +122,7 @@ module Engine
         document.accept(Herb::Engine::HTMLSafeAssertionsVisitor.new)
       end
 
-      assert_includes error.message, "`prism_program` parser option"
+      assert_match "`prism_program` parser option", error.message
     end
 
     test "ignored checks are baked into the assertion - compilation" do
@@ -136,7 +136,7 @@ module Engine
 
       engine = Herb::Engine.new(template, escape: false, visitors: [Herb::Engine::HTMLSafeAssertionsVisitor.new])
 
-      assert_includes engine.src, "file: __FILE__"
+      assert_equal 1, engine.src.scan("file: __FILE__").length
     end
 
     test "safe value passes through unchanged - render" do
@@ -210,7 +210,7 @@ module Engine
       end
 
       assert_equal "<div>#{SCRIPT}</div>", result
-      assert_includes err, "Unsafe `.html_safe` call in app/views/test.html.erb:1:6"
+      assert_match "Unsafe `.html_safe` call in app/views/test.html.erb:1:6", err
     end
 
     test "on_violation handler replaces raising" do
@@ -252,7 +252,7 @@ module Engine
 
       engine = Herb::Engine.new(template, assertion_options)
 
-      refute_includes engine.src, "HTMLSafeAssertions"
+      assert_equal 0, engine.src.scan("HTMLSafeAssertions").length
     end
 
     test "a block argument is wrapped whatever method it is passed to" do
@@ -270,7 +270,7 @@ module Engine
       templates.each do |template|
         engine = Herb::Engine.new(template, assertion_options)
 
-        assert_includes engine.src, "HTMLSafeAssertions.check", template
+        assert_operator engine.src.scan("HTMLSafeAssertions.check").length, :>=, 1, template
       end
     end
 
@@ -315,7 +315,7 @@ module Engine
         Herb::Engine::HTMLSafeAssertionsVisitor.new(ignore: [:scripts])
       end
 
-      assert_includes error.message, "unknown check :scripts"
+      assert_match "unknown check :scripts", error.message
     end
 
     HTML_SAFE_TEMPLATE = "<%= @user.bio.html_safe %>"
